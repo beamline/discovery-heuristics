@@ -3,6 +3,7 @@ package beamline.miners.hm;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -26,8 +27,8 @@ public class CNetGenerator {
 	private Set<String> startEvents;
 	private Set<String> endEvents;
 	
-	private Set<String> startingActivities;
-	private Set<String> finishingActivities;
+	private Map<String, Integer> startingActivities;
+	private Map<String, Integer> finishingActivities;
 	
 	private Double relativeToBestThreshold = 0.05;
 	
@@ -43,7 +44,7 @@ public class CNetGenerator {
 	 * @param startingActivities 
 	 */
 	public CNetGenerator(HashMap<String, Double> dActivities, HashMap<Pair<String, String>, Double> dRelations, 
-			Set<String> startingActivities, Set<String> finishingActivities) {
+			Map<String, Integer> startingActivities, Map<String, Integer> finishingActivities) {
 		this.activities = dActivities;
 		this.relations = dRelations;
 		
@@ -68,7 +69,7 @@ public class CNetGenerator {
 		
 		// add all the nodes
 		for (String event : activityFrequency.keySet()) {
-			Double observations = activityFrequency.get(event);
+//			Double observations = activityFrequency.get(event);
 			// check that the activity is still alive
 			CNetNode n = new CNetNode(event);
 			model.addNode(n);
@@ -230,11 +231,7 @@ public class CNetGenerator {
 							Double den = (getRelationsCount(split, branch1) + getRelationsCount(split, branch2) + 1);
 							Double andMeasure = num / den;
 							
-							
 							if (andMeasure >= andThreshold) {
-							
-								System.out.println(split + " AND " + branch1 + "," + branch2 + " (" + andMeasure + " = " + num + " / " + den + ")");
-								
 								// the two are actually in and
 								HashSet<Pair<String, String>> ands = andSplitRelations.get(split);
 								if (ands == null) {
@@ -245,8 +242,6 @@ public class CNetGenerator {
 									ands.add(p);
 									andSplitRelations.put(split, ands);
 								}
-							} else {
-								System.out.println(split + " XOR " + branch1 + "," + branch2 + " (" + andMeasure + " = " + num + " / " + den + ")");
 							}
 						}
 					}
@@ -283,9 +278,8 @@ public class CNetGenerator {
 									Pair<String, String> p = Pair.of(branch1, branch2);
 									ands.add(p);
 									andJoinRelations.put(join, ands);
-								}							
+								}
 							}
-
 						}
 					}
 				}
@@ -327,25 +321,16 @@ public class CNetGenerator {
 		return countAB;
 	}
 	
-	public void updateStartsEnds(Set<String> startObservations, Set<String> endObservations, double activityThreshold) {
-		
-		Integer max = -1;
+	public void updateStartsEnds(Map<String, Integer> startObservations, Map<String, Integer> endObservations, double activityThreshold) {
 		this.startEvents = new HashSet<String>(1);
 		this.endEvents = new HashSet<String>(1);
-		for (String k : startObservations) {
-//			Integer v = startObservations.get(k);
-			if (/*v > max &&*/ activities.containsKey(k) && activityFrequency.get(k) > activityThreshold) {
-//				max = v;
-//				startEvents.clear();
+		for (String k : startObservations.keySet()) {
+			if (startObservations.get(k) > activityThreshold && activities.containsKey(k) && activityFrequency.get(k) > activityThreshold) {
 				startEvents.add(k);
 			}
 		}
-		max = -1;
-		for (String k : endObservations) {
-//			Integer v = endObservations.get(k);
-			if (/*v > max &&*/ activities.containsKey(k) && activityFrequency.get(k) > activityThreshold) {
-//				max = v;
-//				endEvents.clear();
+		for (String k : endObservations.keySet()) {
+			if (endObservations.get(k) > activityThreshold && activities.containsKey(k) && activityFrequency.get(k) > activityThreshold) {
 				endEvents.add(k);
 			}
 		}

@@ -1,7 +1,6 @@
-package beamline.miners.hm.lossycounting;
+package beamline.miners.hm.lossycounting.models;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -51,12 +50,17 @@ public class DCases extends HashMap<String, Pair<Pair<String, Integer>, Integer>
 		return null;
 	}
 	
-	public HashSet<String> getFinishingActivities() {
-		HashSet<String> tmp = new HashSet<String>();
+	public HashMap<String, Integer> getFinishingActivities() {
+		HashMap<String, Integer> tmp = new HashMap<String, Integer>();
 		for (Iterator<String> it = keySet().iterator(); it.hasNext();) {
 			String caseId = it.next();
 			Pair<Pair<String, Integer>, Integer> v = get(caseId);
-			tmp.add(v.getLeft().getLeft());
+			String activity = v.getLeft().getLeft();
+			if (tmp.containsKey(activity)) {
+				tmp.put(activity, tmp.get(activity) + 1);
+			} else {
+				tmp.put(activity, 1);
+			}
 		}
 		return tmp;
 	}

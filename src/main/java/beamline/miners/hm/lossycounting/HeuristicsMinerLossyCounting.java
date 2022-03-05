@@ -1,4 +1,4 @@
-package beamline.miners.hm;
+package beamline.miners.hm.lossycounting;
 
 import java.util.HashMap;
 
@@ -7,9 +7,10 @@ import org.deckfour.xes.model.XEvent;
 import org.deckfour.xes.model.XTrace;
 import org.processmining.models.cnet.CNet;
 
-import beamline.miners.hm.lossycounting.DActivities;
-import beamline.miners.hm.lossycounting.DCases;
-import beamline.miners.hm.lossycounting.DRelations;
+import beamline.miners.hm.CNetGenerator;
+import beamline.miners.hm.lossycounting.models.DActivities;
+import beamline.miners.hm.lossycounting.models.DCases;
+import beamline.miners.hm.lossycounting.models.DRelations;
 import beamline.models.algorithms.StreamMiningAlgorithm;
 
 public class HeuristicsMinerLossyCounting extends StreamMiningAlgorithm<XTrace, CNet> {
@@ -29,7 +30,7 @@ public class HeuristicsMinerLossyCounting extends StreamMiningAlgorithm<XTrace, 
 	private double positiveObservationThreshold = 10.0;
 	
 	public HeuristicsMinerLossyCounting() {
-		this(Double.MIN_VALUE);
+		this(0.0001);
 	}
 	
 	public HeuristicsMinerLossyCounting(double maxApproximationError) {
@@ -78,7 +79,7 @@ public class HeuristicsMinerLossyCounting extends StreamMiningAlgorithm<XTrace, 
 		CNetGenerator generator = new CNetGenerator(
 				activities.getActivities(),
 				relations.getRelations(),
-				startingActivities.keySet(),
+				startingActivities,
 				cases.getFinishingActivities());
 		modelCache = generator.generateModel(dependencyThreshold, positiveObservationThreshold, andThreshold);
 		return modelCache;

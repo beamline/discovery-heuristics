@@ -1,4 +1,4 @@
-package beamline.miners.hm.lossycounting;
+package beamline.miners.hm.lossycounting.models;
 
 import java.util.HashMap;
 import java.util.Iterator;

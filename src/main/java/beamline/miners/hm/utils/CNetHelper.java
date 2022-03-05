@@ -15,9 +15,6 @@ import org.processmining.plugins.cnet.replayer.converter.CNet2PetrinetConverter;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
-import beamline.graphviz.Dot;
-import beamline.graphviz.DotNode;
-
 /**
  *
  * @author Andrea Burattin
@@ -239,7 +236,7 @@ public class CNetHelper {
 		return 2.0 * (precision * recall) / (precision + recall);
 	}*/
 	
-	private static <K> Double getPrecision(Set<K> baseline, Set<K> extracted) {
+	/*private static <K> Double getPrecision(Set<K> baseline, Set<K> extracted) {
 		Double tp = 0.0;
 		Double fp = 0.0;
 		Double fn = 0.0;
@@ -278,5 +275,5 @@ public class CNetHelper {
 			}
 		}
 		return tp / (tp + fn);
-	}
+	}*/
 }
