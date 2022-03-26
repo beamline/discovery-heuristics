@@ -2,16 +2,15 @@ package beamline.miners.hm.budgetlossycounting;
 
 import java.util.HashMap;
 
-import org.deckfour.xes.extension.std.XConceptExtension;
-import org.deckfour.xes.model.XEvent;
-import org.deckfour.xes.model.XTrace;
 import org.processmining.models.cnet.CNet;
 
+import beamline.events.BEvent;
 import beamline.miners.hm.CNetGenerator;
 import beamline.miners.hm.budgetlossycounting.models.DBudgetActivities;
 import beamline.miners.hm.budgetlossycounting.models.DBudgetCases;
 import beamline.miners.hm.budgetlossycounting.models.DBudgetRelations;
 import beamline.miners.hm.budgetlossycounting.models.SharedDelta;
+import beamline.miners.hm.budgetlossycounting.models.StreamingCNet;
 import beamline.models.algorithms.StreamMiningAlgorithm;
 
 /**
@@ -19,8 +18,9 @@ import beamline.models.algorithms.StreamMiningAlgorithm;
  * 
  * @author Andrea Burattin
  */
-public class HeuristicsMinerBudgetLossyCounting extends StreamMiningAlgorithm<XTrace, CNet> {
+public class HeuristicsMinerBudgetLossyCounting extends StreamMiningAlgorithm<StreamingCNet> {
 
+	private static final long serialVersionUID = -1049270032599672805L;
 	private HashMap<String, Integer> startingActivities;
 	private HashMap<String, Integer> finishingActivities;
 //	private Collection<Pair<String, String>> logStartsEnd;
@@ -29,12 +29,13 @@ public class HeuristicsMinerBudgetLossyCounting extends StreamMiningAlgorithm<XT
 	private DBudgetRelations relations;
 	private DBudgetCases cases;
 	
-	private CNet modelCache = null;
 	private String latestActivity = null;
 	
 	private double dependencyThreshold = 0.9;
 	private double andThreshold = 0.1;
 	private double positiveObservationThreshold = 10.0;
+	
+	private int modelRefreshRate = 10;
 	
 	public HeuristicsMinerBudgetLossyCounting(int budget, double dependencyThreshold, double positiveObservationThreshold, double andThreshold) {
 		this.dependencyThreshold = dependencyThreshold;
@@ -57,11 +58,10 @@ public class HeuristicsMinerBudgetLossyCounting extends StreamMiningAlgorithm<XT
 	}
 	
 	@Override
-	public CNet ingest(XTrace trace) {
+	public StreamingCNet ingest(BEvent event) {
 		
-		XEvent event = trace.get(0);
-		String activityName = XConceptExtension.instance().extractName(event);
-		String caseId = XConceptExtension.instance().extractName(trace);
+		String activityName = event.getEventName();
+		String caseId = event.getTraceName();
 		
 		// update data structures
 		activities.addObservation(activityName);
@@ -78,16 +78,24 @@ public class HeuristicsMinerBudgetLossyCounting extends StreamMiningAlgorithm<XT
 //			cases.lastActivityObserved(activityName);
 //		}
 		
-		return modelCache;
+		if (getProcessedEvents() % modelRefreshRate == 0) {
+			return updateModel();
+		}
+		return null;
 	}
 
-	public CNet updateModel() {
+	public StreamingCNet updateModel() {
 		CNetGenerator generator = new CNetGenerator(
 				activities.getActivities(),
 				relations.getRelations(),
 				startingActivities,
 				cases.getFinishingActivities());
-		modelCache = generator.generateModel(dependencyThreshold, positiveObservationThreshold, andThreshold);
-		return modelCache;
+		CNet modelCache = generator.generateModel(dependencyThreshold, positiveObservationThreshold, andThreshold);
+		return new StreamingCNet(modelCache);
+	}
+	
+	public HeuristicsMinerBudgetLossyCounting setModelRefreshRate(int modelRefreshRate) {
+		this.modelRefreshRate = modelRefreshRate;
+		return this;
 	}
 }

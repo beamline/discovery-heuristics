@@ -7,14 +7,18 @@ import org.deckfour.xes.model.XEvent;
 import org.deckfour.xes.model.XTrace;
 import org.processmining.models.cnet.CNet;
 
+import beamline.events.BEvent;
 import beamline.miners.hm.CNetGenerator;
+import beamline.miners.hm.budgetlossycounting.HeuristicsMinerBudgetLossyCounting;
+import beamline.miners.hm.budgetlossycounting.models.StreamingCNet;
 import beamline.miners.hm.lossycounting.models.DActivities;
 import beamline.miners.hm.lossycounting.models.DCases;
 import beamline.miners.hm.lossycounting.models.DRelations;
 import beamline.models.algorithms.StreamMiningAlgorithm;
 
-public class HeuristicsMinerLossyCounting extends StreamMiningAlgorithm<XTrace, CNet> {
+public class HeuristicsMinerLossyCounting extends StreamMiningAlgorithm<StreamingCNet> {
 
+	private static final long serialVersionUID = -6998030391882756554L;
 	private HashMap<String, Integer> startingActivities;
 	private HashMap<String, Integer> finishingActivities;
 	private DActivities activities;
@@ -28,6 +32,8 @@ public class HeuristicsMinerLossyCounting extends StreamMiningAlgorithm<XTrace, 
 	private double dependencyThreshold = 0.9;
 	private double andThreshold = 0.1;
 	private double positiveObservationThreshold = 10.0;
+	
+	private int modelRefreshRate = 10;
 	
 	public HeuristicsMinerLossyCounting() {
 		this(0.0001);
@@ -52,11 +58,10 @@ public class HeuristicsMinerLossyCounting extends StreamMiningAlgorithm<XTrace, 
 	}
 	
 	@Override
-	public CNet ingest(XTrace trace) {
+	public StreamingCNet ingest(BEvent event) {
 		currentBucket = (int)(getProcessedEvents() / bucketWidth);
-		XEvent event = trace.get(0);
-		String activityName = XConceptExtension.instance().extractName(event);
-		String caseId = XConceptExtension.instance().extractName(trace);
+		String activityName = event.getEventName();
+		String caseId = event.getTraceName();
 		
 		// update data structures
 		activities.addActivityObservation(activityName, currentBucket);
@@ -72,16 +77,24 @@ public class HeuristicsMinerLossyCounting extends StreamMiningAlgorithm<XTrace, 
 			relations.cleanup(currentBucket);
 		}
 		
-		return modelCache;
+		if (getProcessedEvents() % modelRefreshRate == 0) {
+			return updateModel();
+		}
+		return null;
 	}
 
-	public CNet updateModel() {
+	public StreamingCNet updateModel() {
 		CNetGenerator generator = new CNetGenerator(
 				activities.getActivities(),
 				relations.getRelations(),
 				startingActivities,
 				cases.getFinishingActivities());
 		modelCache = generator.generateModel(dependencyThreshold, positiveObservationThreshold, andThreshold);
-		return modelCache;
+		return new StreamingCNet(modelCache);
+	}
+
+	public HeuristicsMinerLossyCounting setModelRefreshRate(int modelRefreshRate) {
+		this.modelRefreshRate = modelRefreshRate;
+		return this;
 	}
 }

@@ -1,7 +1,11 @@
 package beamline.miners.hm.budgetlossycounting.models;
 
-public class SharedDelta {
+import java.io.Serializable;
 
+public class SharedDelta implements Serializable {
+
+	private static final long serialVersionUID = -235468256817104055L;
+	
 	public int currentBucket = 0;
 	public int budget = -1;
 	
